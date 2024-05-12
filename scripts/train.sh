@@ -1,0 +1,26 @@
+python train_dialectclip.py --dataset Uyghur \
+    --speech_model openai/whisper-medium \
+    --language_model Qwen/Qwen1.5-0.5B-Chat \
+    --sampling_rate 16000 \
+    --logit_scale_init_value 2.6592 \
+    --initializer_range 0.02 \
+    --speech_dim 1024 \
+    --text_dim 1024 \
+    --num_group_tokens 64 \
+    --attn_dropout_rate 0.1 \
+    --mlp_dropout_rate 0.1 \
+    --tau 1.0 \
+    --alpha 0.1 \
+    --beta 0.5 \
+    --device cuda \
+    --epochs 3 \
+    --batch_size 16 \
+    --shuffle \
+    --num_workers 8 \
+    --learning_rate 0.0001 \
+    --weight_decay_rate 0.001 \
+    --model_save_path ./checkpoint/dialect_clip.pth \
+    --save_checkpoint_frequency 20 \
+    --num_beams 1 \
+    --max_length 128 \
+
