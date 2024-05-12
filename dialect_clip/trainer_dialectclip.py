@@ -10,7 +10,7 @@ from transformers.feature_extraction_utils import BatchFeature
 from transformers import AutoFeatureExtractor, AutoTokenizer
 from .configuration_dialectclip import DialectCLIPTrainerConfig
 from .modeling_dialectclip import DialectCLIPForConditionalGeneration
-from .processing_dialectclip import DialectCLIPProcessor, collate_fn
+from .processing_dialectclip import DialectCLIPProcessor
 from .utils_dialectclip import WER, line_plot
 
 
@@ -115,7 +115,7 @@ class DialectCLIPTrainer(nn.Module):
             batch_size=self.config.batch_size,
             shuffle=False,
             num_workers=self.config.num_workers,
-            collate_fn=collate_fn
+            collate_fn=self.collate_fn
         )
         prompts_template = [self.config.prompt_template for _ in range(self.config.batch_size)]
         prompt_len = len(self.config.prompt_template)

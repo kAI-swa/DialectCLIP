@@ -3,7 +3,7 @@ from transformers.configuration_utils import PretrainedConfig
 
 __all__ = [
     "DialectCLIPConfig",
-    "TrainerConfig"
+    "DialectCLIPTrainerConfig"
 ]
 
 class DialectCLIPConfig(PretrainedConfig):

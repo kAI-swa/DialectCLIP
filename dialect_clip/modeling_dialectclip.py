@@ -273,7 +273,7 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         # logit_scale
         self.logit_scale = nn.Parameter(torch.tensor(config.logit_scale_init_value, dtype=torch.float32))
 
-    @torch.no_grad
+    @torch.no_grad()
     def encode_prompt(
             self,
             input_ids: Optional[torch.Tensor] = None,
@@ -309,6 +309,7 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         if pool:
             pool_embedding = self.pool_language(last_hidden_states)
             pool_embedding = F.normalize(pool_embedding, p=2, dim=1)
+        return (logits, pool_embedding) if pool is not None else (logits,)
     
     def encode_speech(
             self,
