@@ -1,6 +1,6 @@
-import os
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
 from typing import Optional
@@ -43,7 +43,7 @@ class DialectCLIPTrainer(nn.Module):
             input_features = inputs.input_features
             input_speech_features = np.concatenate(input_features, axis=0)
 
-            # audio preprocess
+            # speech preprocess
             inputs = feature_extractor(dialect, sampling_rate=16000)
             input_features = inputs.input_features
             input_dialect_features = np.concatenate(input_features, axis=0)
@@ -57,11 +57,10 @@ class DialectCLIPTrainer(nn.Module):
             return input_ids.to(device=self.device), attention_mask.to(device=self.device), \
                 torch.tensor(input_speech_features, device=self.device), torch.tensor(input_dialect_features, device=self.device)
 
-        optimizer = nn.AdamWeightDecay(
+        optimizer = optim.AdamW(
             model.parameters(),
-            learning_rate=self.config.learning_rate,
-            beta1=0.9,
-            beta2=0.999,
+            lr=self.config.learning_rate,
+            betas=(0.9, 0.999),
             weight_decay=self.config.weight_decay_rate
         )
         dataloader = DataLoader(
@@ -153,15 +152,15 @@ class DialectCLIPTrainer(nn.Module):
         feature_extractor = AutoFeatureExtractor.from_pretrained(model.config.SPEECH_MODEL_NAME)
         tokenizer = AutoTokenizer.from_pretrained(model.config.TEXT_MODEL_NAME)
         processor = DialectCLIPProcessor(feature_extractor=feature_extractor, tokenizer=tokenizer)
-        tokenizer.add_tokens(model.config.audio_token)
+        tokenizer.add_tokens(model.config.speech_token)
         new_vocab_size = len(tokenizer)
         model.config.vocab_size = new_vocab_size
-        model.config.audio_token_index = model.config.vocab_size - 1
+        model.config.speech_token_index = model.config.vocab_size - 1
         loss_lists = []
         error_rate_lists = []
         for epoch in range(self.config.epochs):
             print(f"[Epoch {epoch}/{self.config.epochs}]======>")
-            loss_list = self._train_loop(model, train_dataset)
+            loss_list = self._train_loop(model, train_dataset, feature_extractor, tokenizer)
             loss_lists.append(loss_list)
             if test_dataset is not None:
                 error_rate_list = self._test_loop(model, test_dataset, processor)

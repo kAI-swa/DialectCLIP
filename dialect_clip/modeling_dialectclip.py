@@ -22,7 +22,7 @@ def gumbel_softmax(
         tau: temperature hyperparameters
         dim: dimension to compute softmax and argmax
     '''
-    gumbels = torch.Tensor(np.random.gumbel(0, 1, size=logits.shape), dtype=logits.dtype)
+    gumbels = torch.tensor(np.random.gumbel(0, 1, size=logits.shape), dtype=logits.dtype, device=logits.device)
     gumbels = (logits + gumbels) / tau
     y_soft = F.softmax(gumbels, dim=dim)
 
@@ -322,9 +322,9 @@ class DialectCLIP(DialectCLIPPretrainedModel):
     ):
         '''
         Inputs:
-            input_features: mindspore.Tensor, shape of [batch_size, num_mels, sequence_length]: \
+            input_features: torch.Tensor, shape of [batch_size, num_mels, sequence_length]: \
                 Float values of mel features extracted from the raw speech waveform.
-            head_mask: mindspore.Tensor, shape of [encoder_layers, encoder_attention_heads]: \
+            head_mask: torch.Tensor, shape of [encoder_layers, encoder_attention_heads]: \
                 Mask to nullify selected heads of the attention modules. Mask values selected in `[0, 1]`:
                 - 1 indicates the head is **not masked**,
                 - 0 indicates the head is **masked**.
@@ -348,11 +348,11 @@ class DialectCLIP(DialectCLIPPretrainedModel):
             raise RuntimeError(f"input_features should be given, but got None")
         
         outputs = self.speech_model.encoder(
-            input_features,
-            head_mask,
-            output_attentions,
-            output_hidden_states,
-            return_dict                
+            input_features=input_features,
+            head_mask=head_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict                
         )
         last_hidden_states = outputs[0]
         last_hidden_states, _ = self.grouping_layer(last_hidden_states, self.config.tau, self.config.output_attentions)

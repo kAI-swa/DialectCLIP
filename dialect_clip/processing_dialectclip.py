@@ -25,13 +25,15 @@ class DialectCLIPProcessor(ProcessorMixin):
             An instance of [`AutoTokenizer`]. The tokenizer is a required input.
     '''
     attributes = ["feature_extractor", "tokenizer"]
+    feature_extractor_class = ("WhisperFeatureExtractor")
+    tokenizer_class = ("Qwen2Tokenizer", "Qwen2TokenizerFast")
 
     def __init__(self, feature_extractor=None, tokenizer=None):
         super().__init__(feature_extractor, tokenizer)
         self.feature_extractor = feature_extractor
         self.tokenizer = tokenizer
-        audio_token = "<AUDIO>"
-        self.tokenizer.add_tokens(audio_token)
+        speech_token = "<AUDIO>"
+        self.tokenizer.add_tokens(speech_token)
 
     def __len__(self):
         return len(self.tokenizer)

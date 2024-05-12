@@ -11,7 +11,7 @@ class DialectCLIPConfig(PretrainedConfig):
             self,
             SPEECH_MODEL_NAME = "openai/whisper-medium",
             TEXT_MODEL_NAME = "Qwen/Qwen1.5-0.5B-Chat",
-            audio_token = "<AUDIO>",
+            speech_token = "<AUDIO>",
             default_prompt = "<AUDIO>识别汉语; <Assistant>:",
             sampling_rate = 16000,
             padding = True,
@@ -26,7 +26,7 @@ class DialectCLIPConfig(PretrainedConfig):
             mlp_dropout_rate = 0.2,
             post_norm = True,
             vocab_size = 32000, 
-            audio_token_index = 32000,
+            speech_token_index = 32000,
             pad_token_id = None,
             ignore_idx = -100,
             tau = 1.0,
@@ -39,7 +39,7 @@ class DialectCLIPConfig(PretrainedConfig):
     ):
         self.SPEECH_MODEL_NAME = SPEECH_MODEL_NAME
         self.TEXT_MODEL_NAME = TEXT_MODEL_NAME
-        self.audio_token = audio_token
+        self.speech_token = speech_token
         self.default_prompt = default_prompt
         self.sampling_rate = sampling_rate
         self.truncation = truncation
@@ -53,7 +53,7 @@ class DialectCLIPConfig(PretrainedConfig):
         self.mlp_dropout_rate = mlp_dropout_rate
         self.post_norm = post_norm
         self.vocab_size = vocab_size
-        self.audio_token_index = audio_token_index
+        self.speech_token_index = speech_token_index
         self.ignore_idx = ignore_idx
         self.tau = tau
         self.alpha = alpha
@@ -82,7 +82,7 @@ class DialectCLIPTrainerConfig:
             temperature=None,
             num_beams=1,
             max_length=128,
-            prompt_template = "<AUDIO>识别汉语; <Assistant>:"
+            prompt_template = "<speech>识别汉语; <Assistant>:"
     ) -> None:
         # train configuration
         self.device = device
