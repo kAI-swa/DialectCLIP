@@ -77,7 +77,7 @@ def arg_parser():
         help="The special pad token index in the tokenizer"
     )
     model_parser.add_argument(
-        "--ignore_idx", type=int, default=-100,
+        "--ignore_index", type=int, default=-100,
         help="Specifies a target value that is ignored and does not contribute to the input gradient."
     )
     model_parser.add_argument(
@@ -114,7 +114,7 @@ def arg_parser():
     trainer_parser.add_argument("--learning_rate", type=float, default=1e-4)
     trainer_parser.add_argument("--weight_decay_rate", type=float, default=0.001)
     trainer_parser.add_argument("--model_save_path", type=str, default="./checkpoint/dialect_clip.pth")
-    trainer_parser.add_argument("--save_checkpoint_frequency", default=20, help="How long to save checkpoint")
+    trainer_parser.add_argument("--save_checkpoint_frequency", type=int, default=20, help="How long to save checkpoint")
 
     generation_parser = parser.add_argument_group("Generate Configuration", description="config generation parameters")
     generation_parser.add_argument("--do_sample", action="store_true", help="Whether to sample tokens when generating")
@@ -150,8 +150,8 @@ def main():
         else model_config.attn_dropout_rate
     model_config.mlp_dropout_rate = args.mlp_dropout_rate if args.mlp_dropout_rate is not None \
         else model_config.mlp_dropout_rate
-    model_config.ignore_idx = args.ignore_idx if args.ignore_idx is not None \
-        else model_config.ignore_idx
+    model_config.ignore_index = args.ignore_index if args.ignore_index is not None \
+        else model_config.ignore_index
     model_config.tau = args.tau if args.tau is not None else model_config.tau
     model_config.alpha = args.alpha if args.alpha is not None else model_config.alpha
     model_config.beta = args.beta if args.beta is not None else model_config.beta
