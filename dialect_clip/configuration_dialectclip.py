@@ -28,7 +28,7 @@ class DialectCLIPConfig(PretrainedConfig):
             vocab_size = 32000, 
             speech_token_index = 32000,
             pad_token_id = None,
-            ignore_idx = -100,
+            ignore_index = -100,
             tau = 1.0,
             alpha = 1.0,
             beta = 1.0,
@@ -54,7 +54,7 @@ class DialectCLIPConfig(PretrainedConfig):
         self.post_norm = post_norm
         self.vocab_size = vocab_size
         self.speech_token_index = speech_token_index
-        self.ignore_idx = ignore_idx
+        self.ignore_index = ignore_index
         self.tau = tau
         self.alpha = alpha
         self.beta = beta

@@ -247,7 +247,6 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         self.language_model_config = AutoConfig.from_pretrained(config.TEXT_MODEL_NAME)
         self.language_model = AutoModelForCausalLM.from_pretrained(config.TEXT_MODEL_NAME, config=self.language_model_config)
         self.lm_head = self.language_model.get_output_embeddings()
-        self.language_model.resize_token_embeddings(config.vocab_size)
         for param in self.language_model.parameters():
             param.requires_grad = False
         
@@ -371,8 +370,7 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
             config = DialectCLIPConfig()
         self.config = config
         self.embedding_layer = self.language_model.get_input_embeddings()
-        self.pad_token_id = config.pad_token_id
-        self.speech_token_index = self.config.speech_token_index
+        self.pad_token_id = self.config.pad_token_id if self.config.pad_token_id is not None else -1
 
     def get_input_embeddings(self):
         return self.embedding_layer
@@ -393,29 +391,35 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
         '''
         batch_size, speech_seq_length, d_model = speech_features.shape
         _, text_seq_length = input_ids.shape
+        left_padding = not torch.sum(input_ids[:, -1] == torch.tensor(self.pad_token_id))
         # create a mask to know where special speech tokens <speech> are
         special_speech_token_mask = input_ids == self.config.speech_token_index
         num_special_speech_tokens_per_seq = torch.sum(special_speech_token_mask, dim=-1)
         max_seq_length = num_special_speech_tokens_per_seq.max().item() * (speech_seq_length - 1) + text_seq_length
-        indices = torch.where(input_ids != self.speech_token_index)
-        batch_indices = indices[:, 0]
-        non_speech_indices = indices[:, 1]
+        indices = torch.where(input_ids != self.config.speech_token_index)
+        batch_indices = indices[0]
+        non_speech_indices = indices[1]
 
         # calculate new text token position in merged speech-text embedding sequence
         new_token_positions = torch.cumsum((special_speech_token_mask * (speech_seq_length - 1) + 1), -1) - 1
+        nb_speech_token = max_seq_length - 1 - new_token_positions[:, -1]
+        if left_padding:
+            new_token_positions += nb_speech_token[:, None]
         text_to_overwrite = new_token_positions[batch_indices, non_speech_indices]
         text_embedding_position = (batch_indices, text_to_overwrite)
 
         # create the full embedding, already padded to the maximum position
         final_embedding = torch.zeros(
-            batch_size, max_seq_length, d_model, dtype=inputs_embeds.dtype
+            batch_size, max_seq_length, d_model, dtype=inputs_embeds.dtype,
+            device=self.device
         )
         final_attention_mask = torch.zeros(
-            batch_size, max_seq_length, dtype=attention_mask.dtype
+            batch_size, max_seq_length, dtype=attention_mask.dtype,
+            device=self.device
         )
 
         if labels is not None:
-            final_labels = torch.full_like(final_attention_mask, self.config.ignore_idx)
+            final_labels = torch.full_like(final_attention_mask, self.config.ignore_index, device=self.device)
 
         # fill the final embedding corresponding to the original text embedding
         final_embedding[batch_indices, text_to_overwrite] = inputs_embeds[batch_indices, non_speech_indices]
@@ -424,10 +428,14 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
             final_labels[batch_indices, text_to_overwrite] = labels[batch_indices, non_speech_indices]
         
         # fill the final embedding corresponding to the speech features
-        speech_to_overwrite = torch.all(final_embedding == 0, dim=-1)
+        speech_to_overwrite = torch.full(
+            (batch_size, max_seq_length), True, dtype=torch.bool, device=self.device
+        )
+        speech_to_overwrite[batch_indices, text_to_overwrite] = False
+        speech_to_overwrite &= speech_to_overwrite.cumsum(-1) - 1 >= nb_speech_token[:, None].to(device=self.device)
 
-        if speech_to_overwrite.sum() != speech_features.size // speech_features.shape[-1]:
-            raise ValueError(f"{speech_to_overwrite.sum()} not equal to {speech_features.size // speech_features.shape[-1]}")
+        if speech_to_overwrite.sum() != speech_features.shape[:-1].numel():
+            raise ValueError(f"{speech_to_overwrite.sum()} not equal to {speech_features.shape[:-1].numel()}")
         
         final_embedding[speech_to_overwrite] = speech_features.view(-1, d_model)
         final_attention_mask |= speech_to_overwrite
@@ -435,8 +443,8 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
 
         if self.pad_token_id is not None:
             indices = torch.where(input_ids == self.pad_token_id)
-            batch_indices = indices[:, 0]
-            pad_indices = indices[:, 1]
+            batch_indices = indices[0]
+            pad_indices = indices[1]
             indices_to_mask = new_token_positions[batch_indices, pad_indices]
 
             final_embedding[batch_indices, indices_to_mask] = 0
@@ -509,7 +517,8 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
         loss_casuallm = casuallm_loss(
             logits=logits,
             labels=labels,
-            attention_mask=attention_mask
+            attention_mask=attention_mask,
+            ignore_index=self.config.ignore_index
         )
 
         batch_indices, text_to_overwrite = text_embedding_position
@@ -521,7 +530,7 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
         logits_speech_text = self.logit_scale *  pool_encode_features @ text_pool_features.t()
         # shape = [batch_size, batch_size]
 
-        loss_clip = dialect_clip_loss(similarity=logits_speech_text)
+        loss_clip = dialect_clip_loss(similarity=logits_speech_text, device=self.device)
 
         return loss_clip, loss_casuallm, pool_encode_features
     
@@ -593,7 +602,7 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
         )
 
         logits_speech_text = self.logit_scale * speech_pool_features @ dialect_pool_features.t() # shape = [batch_size, batch_size]
-        loss_clip_speech_dialect = dialect_clip_loss(similarity=logits_speech_text)
+        loss_clip_speech_dialect = dialect_clip_loss(similarity=logits_speech_text, device=self.device)
         loss_clip_dialect += loss_clip_speech_dialect
 
         loss_clip = loss_clip_speech + loss_clip_dialect
@@ -682,7 +691,7 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
                 shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
             loss = F.cross_entropy(
-                shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1), ignore_index=self.config.ignore_idx
+                shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1), ignore_index=self.config.ignore_index
             )
 
         if not return_dict:
@@ -713,4 +722,4 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
             }
         )
         return model_inputs
-    
+ 

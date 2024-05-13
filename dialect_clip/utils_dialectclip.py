@@ -28,34 +28,34 @@ class WER:
         return wer
 
 
-def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
+def contrastive_loss(logits: torch.Tensor, device) -> torch.Tensor:
     '''
     Inputs: 
         logits: [batch_size, batch_size], similarity among pairs
     Outputs:
         Cross Entropy loss within a batch for one modality
     '''
-    target=torch.arange(len(logits))
+    target=torch.arange(len(logits), device=device)
     return F.cross_entropy(input=logits, target=target)
 
 
-def dialect_clip_loss(similarity: torch.Tensor) -> torch.Tensor:
+def dialect_clip_loss(similarity: torch.Tensor, device) -> torch.Tensor:
     '''
     Inputs: 
         similarity: [batch_size, batch_size], similarity score among pairs
     Outputs:
         dialect_CLIP loss
     '''
-    loss_1 = contrastive_loss(similarity)
-    loss_2 = contrastive_loss(similarity.t())
+    loss_1 = contrastive_loss(similarity, device=device)
+    loss_2 = contrastive_loss(similarity.t(), device=device)
     return (loss_1 + loss_2) / 2
 
 
 def casuallm_loss(
-        self,
         logits: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None
+        attention_mask: Optional[torch.Tensor] = None,
+        ignore_index: Optional[int] = None
 ):
     loss_casuallm = None
     if labels is not None:
@@ -68,7 +68,7 @@ def casuallm_loss(
             shift_labels = labels[..., 1:].contiguous()
         # Flatten the tokens
         loss_casuallm = F.cross_entropy(
-            shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1), ignore_index=self.config.ignore_idx
+            shift_logits.view(-1, shift_logits.shape[-1]), shift_labels.view(-1), ignore_index=ignore_index
         )
     else:
         raise ValueError("Labels should be given to compute language modeling loss")

@@ -81,13 +81,14 @@ class DialectCLIPTrainer(nn.Module):
                     input_ids=input_ids,
                     input_speech_features=input_speech_features,
                     input_dialect_features=input_dialect_features,
-                    attention_mask=attention_mask
+                    attention_mask=attention_mask,
+                    labels=input_ids
                 )
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                t.set_description({"loss": loss.item()})
+                t.set_postfix({"loss": loss.item()})
                 loss_list.append(loss.item())
             
                 if batch_idx % self.config.save_checkpoint_frequency == 0:
@@ -96,6 +97,7 @@ class DialectCLIPTrainer(nn.Module):
         line_plot(loss_list, title="Loss")
         return loss_list
 
+    @torch.no_grad()
     def _test_loop(
             self,
             model: DialectCLIPForConditionalGeneration,
@@ -109,6 +111,7 @@ class DialectCLIPTrainer(nn.Module):
             max_length=self.config.max_length,
         )        
         wer = WER()
+        model.eval()
         dataloader = DataLoader(
             dataset=dataset,
             batch_size=self.config.batch_size,
@@ -156,6 +159,7 @@ class DialectCLIPTrainer(nn.Module):
         new_vocab_size = len(tokenizer)
         model.config.vocab_size = new_vocab_size
         model.config.speech_token_index = model.config.vocab_size - 1
+        model.language_model.resize_token_embeddings(new_vocab_size)
         loss_lists = []
         error_rate_lists = []
         for epoch in range(self.config.epochs):
