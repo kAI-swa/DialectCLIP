@@ -435,7 +435,7 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
         speech_to_overwrite &= speech_to_overwrite.cumsum(-1) - 1 >= nb_speech_token[:, None].to(device=self.device)
 
         if speech_to_overwrite.sum() != speech_features.shape[:-1].numel():
-            raise ValueError(f"{speech_to_overwrite.sum()} not equal to {speech_features.shape[:-1].numel()}")
+            raise ValueError(f"{speech_to_overwrite.sum()} not equal to {speech_features.shape[:-1].numel()}, Probably you should add an <AUDIO> token into the prompt to indicate the position of audio signal")
         
         final_embedding[speech_to_overwrite] = speech_features.view(-1, d_model)
         final_attention_mask |= speech_to_overwrite
@@ -669,7 +669,6 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
             attention_mask = attention_mask,
             position_ids = position_ids,
             inputs_embeds = inputs_embeds,
-            labels=labels,
             use_cache = use_cache,
             output_attentions = output_attentions,
             output_hidden_states = output_hidden_states,
@@ -722,4 +721,3 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
             }
         )
         return model_inputs
- 

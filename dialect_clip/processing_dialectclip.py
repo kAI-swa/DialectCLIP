@@ -1,17 +1,13 @@
 import numpy as np
 import torch
-from torch.utils.data import Dataset
-from transformers import AutoFeatureExtractor, AutoTokenizer
 from transformers.processing_utils import ProcessorMixin
 from transformers.feature_extraction_utils import BatchFeature
 from transformers.tokenization_utils_base import PaddingStrategy, TruncationStrategy
-from typing import Any, Optional, Union, List
-from .configuration_dialectclip import DialectCLIPConfig
+from typing import Optional, Union, List
 
 
 __all__ = [
-    "DialectCLIPProcessor",
-    "data_pipe"
+    "DialectCLIPProcessor"
 ]
 
 class DialectCLIPProcessor(ProcessorMixin):
@@ -91,7 +87,7 @@ class DialectCLIPProcessor(ProcessorMixin):
         return BatchFeature(
             data={
                 **text_inputs,
-                "audio": audio
+                "input_features": audio
             }
         )
 
