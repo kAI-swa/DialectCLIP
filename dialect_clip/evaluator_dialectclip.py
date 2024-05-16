@@ -72,7 +72,7 @@ class DialectCLIPEvaluator(nn.Module):
 
             return input_ids.to(device=self.device), attention_mask.to(device=self.device), \
             input_speech_features.to(device=self.device), input_dialect_features.to(device=self.device)
-            
+
 
         generation_config = GenerationConfig(
             do_sample=do_sample,
