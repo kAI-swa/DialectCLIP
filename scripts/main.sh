@@ -1,4 +1,4 @@
-python train_dialectclip.py --dataset Uyghur \
+python main.py --dataset Uyghur \
     --speech_model openai/whisper-medium \
     --language_model Qwen/Qwen1.5-0.5B-Chat \
     --sampling_rate 16000 \
