@@ -72,6 +72,12 @@ class DialectCLIPTrainer(nn.Module):
             betas=(0.9, 0.999),
             weight_decay=self.config.weight_decay_rate
         )
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer=optimizer,
+            factor=0.1,
+            patience=5,
+            verbose=True
+        )
         dataloader = DataLoader(
             dataset=dataset,
             batch_size=self.config.batch_size,
@@ -94,6 +100,9 @@ class DialectCLIPTrainer(nn.Module):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+
+                # update lr_scheduler
+                scheduler.step(loss)
 
                 t.set_postfix({"loss": loss.item()})
                 loss_list.append(loss.item())
