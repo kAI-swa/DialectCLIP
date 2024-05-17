@@ -4,13 +4,13 @@ __DialectCLIP is a LLM-based dialect speech recognition system which utilizes th
 ### Triple CLIP Framework
 __We introduce a triple CLIP framework that jointly trains on the constructed Speech-Dialect-Transcription triplet__
 
-![triple_clip](https://github.com/kAI-swa/DialectCLIP/assets/146005327/2f9fe949-d90b-412e-80c7-bc749b76dc9f)
+![CLIP+EU](https://github.com/kAI-swa/DialectCLIP/assets/146005327/92956bc0-4ea2-4ab4-9b2b-ec0140ddee96)
+
 
 ### Grouping Layer
 __The sparsity of speech features may affect the alignment between modalities and introduce a large amount of computational consumption. To mitigate this problem, we introduce a novel adapter module called Grouping Layer inspired by GroupViT__
 
-![temp_GLCG](https://github.com/kAI-swa/DialectCLIP/assets/146005327/20f9b981-9f36-45df-9e07-e8a1cd735c8e)
-
+![GL+CG](https://github.com/kAI-swa/DialectCLIP/assets/146005327/b3239162-68bd-4a21-a992-fe682b56a2eb)
 
 ## Tested environment
 - **CPU: Intel(R) Xeon(R) Platinum 8255C CPU @ 2.50GHz**
