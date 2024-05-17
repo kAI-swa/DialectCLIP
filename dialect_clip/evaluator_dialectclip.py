@@ -87,7 +87,8 @@ class DialectCLIPEvaluator(nn.Module):
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
-            collate_fn=_collate_fn
+            collate_fn=_collate_fn,
+            drop_last=True
         )
         prompts_template = [prompt_template for _ in range(batch_size)]
         prompt_len = len(prompt_template)
