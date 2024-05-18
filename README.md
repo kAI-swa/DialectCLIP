@@ -7,7 +7,7 @@ __We introduce a triple CLIP framework that jointly trains on the constructed Sp
 ![CLIP+EU_git](https://github.com/kAI-swa/DialectCLIP/assets/146005327/fafbee42-b567-4518-ac71-8e4bb1a75357)
 
 ### Grouping Layer
-__The sparsity of speech features may affect the alignment between modalities and introduce a large amount of computational consumption. To mitigate this problem, we introduce a novel adapter module called Grouping Layer inspired by GroupViT__
+__The sparsity of speech features may affect the alignment between modalities and introduce a large amount of computational consumption. To mitigate this problem, we introduce a novel adapter module called Grouping Layer__
 
 ![GL+CG_git](https://github.com/kAI-swa/DialectCLIP/assets/146005327/c438d0a8-6848-463f-8949-3ece8cb2bf39)
 
