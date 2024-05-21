@@ -162,6 +162,8 @@ class DialectCLIP(DialectCLIPPretrainedModel):
 
         # logit_scale
         self.logit_scale = nn.Parameter(torch.tensor(config.logit_scale_init_value, dtype=torch.float32))
+        
+        self.freeze_speech_decoder()
 
     def get_speech_encoder(self):
         return self.speech_model.get_encoder()
@@ -184,6 +186,10 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         not be updated during training.
         """
         self.speech_model.encoder._freeze_parameters()
+        
+    def freeze_speech_decoder(self):
+        for param in self.speech_model.model.decoder.parameters():
+            param.requires_grad = False
 
     def train_forward(
             self,
@@ -204,7 +210,7 @@ class DialectCLIP(DialectCLIPPretrainedModel):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
-            pool: Optional[bool] = None             
+            pool: Optional[bool] = True            
     ):
         '''
         ----------------------
@@ -359,6 +365,7 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         )
 
         encoder_last_hidden_states = outputs[-3]
+        pool_features = None
         if pool:
             pool_features = self.pool_speech(encoder_last_hidden_states)
             pool_features = F.normalize(pool_features, p=2, dim=1)
@@ -464,4 +471,3 @@ class DialectCLIPWithGER(DialectCLIP):
         )    
         generate_ids = super().generate(inputs=input_features, generation_config=generation_config)
         hypothesis_list = self.processor.batch_decode(generate_ids, skip_special_tokens=True)[0]
-

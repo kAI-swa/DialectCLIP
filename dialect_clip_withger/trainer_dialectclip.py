@@ -51,8 +51,7 @@ class DialectCLIPTrainer(nn.Module):
             input_dialect_features = inputs.input_features
 
             # transcipt preprocess
-            prompts = [self.model.config.default_prompt + transcript_item for transcript_item in transcript]
-            inputs = self.processor.tokenizer(prompts, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+            inputs = self.processor.tokenizer(transcript, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
             decoder_input_ids = inputs.input_ids
 
             return decoder_input_ids.to(device=self.device), input_speech_features.to(device=self.device), input_dialect_features.to(device=self.device)
