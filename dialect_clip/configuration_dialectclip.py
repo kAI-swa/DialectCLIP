@@ -22,8 +22,12 @@ class DialectCLIPConfig(PretrainedConfig):
             speech_dim = 1024,
             text_dim = 1024,
             num_group_tokens = 64,
-            attn_dropout_rate = 0.2,
-            mlp_dropout_rate = 0.2,
+            lora_rank = 32,
+            lora_alpha = 8,
+            lora_dropout_rate = 0.01,
+            target_modules = ["q_proj", "k_proj"],
+            attn_dropout_rate = 0.01,
+            mlp_dropout_rate = 0.01,
             post_norm = True,
             vocab_size = 151647, 
             speech_token_index = 151646,
@@ -51,7 +55,11 @@ class DialectCLIPConfig(PretrainedConfig):
         self.num_group_tokens = num_group_tokens
         self.attn_dropout_rate = attn_dropout_rate
         self.mlp_dropout_rate = mlp_dropout_rate
+        self.lora_rank = lora_rank
+        self.lora_dropout_rate = lora_dropout_rate
+        self.target_modules = target_modules
         self.post_norm = post_norm
+        self.lora_alpha = lora_alpha
         self.vocab_size = vocab_size
         self.speech_token_index = speech_token_index
         self.ignore_index = ignore_index
@@ -70,7 +78,7 @@ class DialectCLIPTrainerConfig:
     def __init__(
             self,
             device = "cuda" if torch.cuda.is_available() else "cpu",
-            epochs = 3,
+            epochs = 2,
             batch_size = 32,
             shuffle = True,
             num_workers = 8,

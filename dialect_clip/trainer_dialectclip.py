@@ -36,6 +36,69 @@ class DialectCLIPTrainer(nn.Module):
         self.model= self.model.to(device=self.device)
         self.model.train()
 
+    def _pretrain_loop(
+            self,
+            dataset: Dataset
+    ):
+        '''
+        ------------
+        Inputs:
+            model: Initialized DialectCLIP class
+            dataset: mindspore.dataset.Dataset
+        Used for pre-train DialectCLIP on common language speech corpus
+        '''
+        def _collate_fn(batch):
+            speech, transcript = list(zip(*batch))
+
+            # speech preprocess
+            inputs = self.feature_extractor(speech, sampling_rate=16000, return_tensors="pt")
+            input_speech_features = inputs.input_features
+
+            # transcipt preprocess
+            prompts = [self.model.config.default_prompt + transcript_item for transcript_item in transcript]
+            inputs = self.tokenizer(prompts, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+            input_ids = inputs.input_ids
+            attention_mask = inputs.attention_mask
+
+            return input_ids.to(device=self.device), attention_mask.to(device=self.device), input_speech_features.to(device=self.device)
+
+        optimizer = optim.AdamW(
+            self.model.parameters(),
+            lr=self.config.learning_rate,
+            betas=(0.9, 0.999),
+            weight_decay=self.config.weight_decay_rate
+        )
+        dataloader = DataLoader(
+            dataset=dataset,
+            batch_size=self.config.batch_size,
+            shuffle=self.config.shuffle,
+            num_workers=self.config.num_workers,
+            collate_fn=_collate_fn
+        )
+        loss_list = []
+
+        with tqdm(enumerate(dataloader), total=len(dataloader), leave=True) as t:
+            for batch_idx, (input_ids, attention_mask, input_features) in t:
+                t.set_description("DialectCLIP Training")
+                loss_clip, loss_casuallm, _ = self.model.forward_fn(
+                    input_ids=input_ids,
+                    input_features=input_features,
+                    attention_mask=attention_mask,
+                    labels=input_ids
+                )
+                loss = self.model.config.alpha * loss_clip + self.model.config.beta * loss_casuallm
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                t.set_postfix({"loss": loss.item()})
+                loss_list.append(loss.item())
+            
+                if batch_idx % self.config.save_checkpoint_frequency == 0:
+                    state = self.model.state_dict()
+                    torch.save(state, self.config.model_save_path)
+        line_plot(loss_list, title="Pre-train Loss")
+
     def _train_loop(
             self,
             dataset: Dataset
@@ -53,7 +116,7 @@ class DialectCLIPTrainer(nn.Module):
             inputs = self.feature_extractor(speech, sampling_rate=16000, return_tensors="pt")
             input_speech_features = inputs.input_features
 
-            # speech preprocess
+            # dialect preprocess
             inputs = self.feature_extractor(dialect, sampling_rate=16000, return_tensors="pt")
             input_dialect_features = inputs.input_features
 
@@ -114,6 +177,10 @@ class DialectCLIPTrainer(nn.Module):
 
     def forward(
             self,
-            train_dataset: Dataset,
+            dataset: Dataset,
+            pretrain: Optional[bool] = None
     ):
-        self._train_loop(train_dataset)
+        if pretrain:
+            self._pretrain_loop(dataset)
+        else:
+            self._train_loop(dataset)

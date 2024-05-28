@@ -7,9 +7,9 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import AutoFeatureExtractor, AutoTokenizer
 from transformers.generation import GenerationConfig
 from transformers.feature_extraction_utils import BatchFeature
-from dialect_clip.modeling_dialectclip import DialectCLIPForConditionalGeneration
-from dialect_clip.processing_dialectclip import DialectCLIPProcessor
-from dialect_clip.utils_dialectclip import WER, line_plot
+from .modeling_dialectclip import DialectCLIPForConditionalGeneration
+from .processing_dialectclip import DialectCLIPProcessor
+from .utils_dialectclip import WER, line_plot
 
 
 class DialectCLIPEvaluator(nn.Module):
@@ -72,7 +72,6 @@ class DialectCLIPEvaluator(nn.Module):
 
             return input_ids.to(device=self.device), attention_mask.to(device=self.device), \
             input_speech_features.to(device=self.device), input_dialect_features.to(device=self.device)
-
 
         generation_config = GenerationConfig(
             do_sample=do_sample,

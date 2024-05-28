@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from transformers import AutoModel, AutoModelForCausalLM, AutoConfig
 from transformers.modeling_utils import PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutput
+from peft import LoraConfig, get_peft_model
 from typing import Optional, List, Union
 from .configuration_dialectclip import DialectCLIPConfig
 from .utils_dialectclip import dialect_clip_loss, casuallm_loss
@@ -249,6 +250,17 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         self.lm_head = self.language_model.get_output_embeddings()
         for param in self.language_model.parameters():
             param.requires_grad = False
+
+        # LoRA configuration
+        self.peft_config = LoraConfig(
+            task_type="CAUSAL_LM",
+            r=self.config.lora_rank,
+            lora_alpha=self.config.lora_alpha,
+            lora_dropout=self.config.lora_dropout_rate,
+            bias="none",
+            target_modules=self.config.target_modules
+        )
+        self.language_model = get_peft_model(model=self.language_model, peft_config=self.peft_config)
         
         # Speech Encoder initialize
         self.speech_config = AutoConfig.from_pretrained(config.SPEECH_MODEL_NAME)
@@ -292,7 +304,7 @@ class DialectCLIP(DialectCLIPPretrainedModel):
         )
         return_dict = return_dict if return_dict is not None else self.config.return_dict
 
-        outputs = self.language_model.model(
+        outputs = self.language_model.model.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -499,7 +511,7 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
         inputs_embeds, attention_mask, labels, position_ids, text_embedding_position \
             = self._merge_input_ids_with_speech_features(encode_features, inputs_embeds=inputs_embeds, input_ids=input_ids, attention_mask=attention_mask, labels=labels)
         
-        outputs = self.language_model.model(
+        outputs = self.language_model.model.model(
             input_ids=None,
             attention_mask = attention_mask,
             position_ids = position_ids,
@@ -509,7 +521,6 @@ class DialectCLIPForConditionalGeneration(DialectCLIP):
             output_hidden_states = output_hidden_states,
             return_dict = return_dict
         )
-
         last_hidden_states = outputs[0]
         logits = self.lm_head(last_hidden_states)
         logits = logits.float()
